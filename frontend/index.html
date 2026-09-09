@@ -361,7 +361,7 @@ async function scanImage() {
     formData.append("file", input.files[0]);
 
     try {
-        const response = await fetch("http://127.0.0.1:8080/scan", {
+        const response = await fetch("https://compliscan-backend-i9zx.onrender.com/scan", {
             method: "POST",
             body: formData
         });
@@ -391,7 +391,7 @@ function renderResult(data) {
     html += `<p class="missing-count">Missing required declarations: <strong>${data.missing_required_count}</strong></p>`;
 
         if (data.annotated_image) {
-        html += `<img class="evidence-img" src="http://127.0.0.1:8080/annotated/${data.annotated_image}" alt="Annotated evidence image">`;
+        html += `<img class="evidence-img" src="https://compliscan-backend-i9zx.onrender.com/annotated/${data.annotated_image}" alt="Annotated evidence image">`;
     }
 
     data.details.forEach(item => {
@@ -411,7 +411,7 @@ function renderResult(data) {
     });
 
     if (data.scan_id) {
-        html += `<a href="http://127.0.0.1:8080/report/${data.scan_id}" class="download-btn" target="_blank">Download PDF report</a>`;
+        html += `<a href="https://compliscan-backend-i9zx.onrender.com/report/${data.scan_id}" class="download-btn" target="_blank">Download PDF report</a>`;
     }
 
     resultDiv.innerHTML = html;
@@ -432,7 +432,7 @@ async function toggleHistory() {
     panel.classList.add("open");
 
     try {
-        const response = await fetch("http://127.0.0.1:8080/history");
+        const response = await fetch("https://compliscan-backend-i9zx.onrender.com/history");
         const scans = await response.json();
 
         if (!scans.length) {
