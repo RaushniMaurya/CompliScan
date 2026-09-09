@@ -1,0 +1,47 @@
+{
+  "rule_source": "Legal Metrology (Packaged Commodities) Rules, 2011 - Rule 6(1)",
+  "declarations": [
+    {
+      "field": "manufacturer",
+      "label": "Manufacturer/Packer/Importer Name & Address",
+      "required": true,
+      "notes": "Rule 6(1)(a)"
+    },
+    {
+      "field": "product_name",
+      "label": "Common/Generic Name of Commodity",
+      "required": true,
+      "notes": "Rule 6(1)(b)"
+    },
+    {
+      "field": "net_quantity",
+      "label": "Net Quantity",
+      "required": true,
+      "notes": "Rule 6(1)(c) - must be in standard weight/volume/number units"
+    },
+    {
+      "field": "mfg_date",
+      "label": "Month and Year of Manufacture/Packing",
+      "required": true,
+      "notes": "Rule 6(1)(d)"
+    },
+    {
+      "field": "mrp",
+      "label": "Maximum Retail Price (incl. all taxes)",
+      "required": true,
+      "notes": "Rule 6(1)(e)"
+    },
+    {
+      "field": "consumer_care",
+      "label": "Consumer Care Details",
+      "required": true,
+      "notes": "Rule 6(1)(f)"
+    },
+    {
+      "field": "country_of_origin",
+      "label": "Country of Origin",
+      "required": false,
+      "notes": "Only mandatory for imported products"
+    }
+  ]
+}

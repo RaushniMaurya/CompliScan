@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CompliScan — AI Compliance Checker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --ink: #14103A;
+        --paper: #F7F5EF;
+        --rule: #E1DDD0;
+        --amber: #E8B54B;
+        --violet: #7C3AED;
+        --indigo: #2E1F8F;
+        --text: #1B1B18;
+        --pass: #1F7A54; --pass-bg: #E5F3EC;
+        --warn: #9A6B0C; --warn-bg: #FBF0DB;
+        --fail: #A6362B; --fail-bg: #FBEAE8;
+        --na: #6B6B63;   --na-bg: #EFEDE5;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--text);
+        font-family: 'IBM Plex Mono', monospace;
+        line-height: 1.5;
+    }
+
+    /* --- Animated gradient hero --- */
+    .hero {
+        position: relative;
+        overflow: hidden;
+        padding: 80px 24px 130px;
+        background: linear-gradient(120deg, var(--indigo), var(--violet) 45%, #B4459A 75%, var(--amber));
+        background-size: 300% 300%;
+        animation: gradientShift 14s ease infinite;
+    }
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .hero-inner {
+        max-width: 720px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    h1 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
+        font-size: 3rem;
+        color: white;
+        margin: 0 0 16px;
+        letter-spacing: -0.01em;
+        opacity: 0;
+        transform: translateY(16px);
+        animation: riseIn 0.7s ease-out 0.1s forwards;
+    }
+
+    .hero p {
+        margin: 0;
+        font-size: 0.98rem;
+        color: rgba(255,255,255,0.85);
+        max-width: 56ch;
+        opacity: 0;
+        transform: translateY(16px);
+        animation: riseIn 0.7s ease-out 0.35s forwards;
+    }
+
+    @keyframes riseIn {
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    main {
+        max-width: 720px;
+        margin: -70px auto 0;
+        padding: 0 24px 80px;
+        position: relative;
+    }
+
+    /* --- Glass scan card, floating over hero edge --- */
+    .scan-bed {
+        position: relative;
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.6);
+        border-radius: 16px;
+        box-shadow: 0 20px 45px rgba(20,16,58,0.18);
+        padding: 40px 24px;
+        margin-bottom: 32px;
+        opacity: 0;
+        transform: translateY(16px);
+        animation: riseIn 0.7s ease-out 0.55s forwards;
+    }
+
+    .corner-tl, .corner-br {
+        content: "";
+        position: absolute;
+        width: 22px;
+        height: 22px;
+        border: 2px solid var(--amber);
+    }
+    .corner-tl { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+    .corner-br { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+
+    .preview-wrap {
+        position: relative;
+        max-width: 280px;
+        margin: 0 auto 20px;
+        display: none;
+        overflow: hidden;
+        border-radius: 10px;
+        border: 1px solid var(--rule);
+    }
+    .preview-wrap img { display: block; width: 100%; }
+    .scan-line {
+        position: absolute;
+        left: 0; right: 0;
+        height: 3px;
+        background: var(--amber);
+        box-shadow: 0 0 10px 3px rgba(232,181,75,0.8);
+        top: 0;
+        display: none;
+    }
+    .scan-line.active { display: block; animation: sweep 1.4s ease-in-out infinite; }
+    @keyframes sweep { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+
+    .upload-row { text-align: center; }
+    input[type="file"] { font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; }
+
+    button {
+        font-family: 'IBM Plex Mono', monospace;
+        font-weight: 600;
+        font-size: 0.92rem;
+        color: white;
+        background: linear-gradient(120deg, var(--indigo), var(--violet));
+        border: none;
+        border-radius: 30px;
+        padding: 13px 30px;
+        margin-top: 20px;
+        cursor: pointer;
+        letter-spacing: 0.02em;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        box-shadow: 0 6px 18px rgba(124,58,237,0.35);
+    }
+    button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(124,58,237,0.45); }
+    button:disabled { background: #A9ADB8; cursor: default; box-shadow: none; }
+
+    /* --- Results --- */
+    #result { margin-top: 8px; }
+
+    .stamp {
+        display: inline-block;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
+        font-size: 1.1rem;
+        letter-spacing: 0.04em;
+        padding: 10px 20px;
+        border: 3px solid currentColor;
+        border-radius: 8px;
+        transform: rotate(-2deg);
+        margin-bottom: 20px;
+        opacity: 0;
+        animation: riseIn 0.5s ease-out forwards;
+    }
+    .stamp.COMPLIANT { color: var(--pass); }
+    .stamp.NEEDS_VERIFICATION { color: var(--warn); }
+    .stamp.POTENTIAL_NON_COMPLIANCE { color: var(--fail); }
+
+    .missing-count { font-size: 0.85rem; color: #57564E; margin: 0 0 24px; }
+    .missing-count strong { color: var(--text); }
+
+    .ledger-row {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        padding: 16px;
+        margin-bottom: 10px;
+        background: white;
+        border-radius: 10px;
+        border: 1px solid var(--rule);
+        box-shadow: 0 2px 8px rgba(20,16,58,0.04);
+    }
+
+    .ledger-icon {
+        flex: none;
+        width: 24px; height: 24px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        margin-top: 2px;
+    }
+    .ledger-icon.PASS { background: var(--pass-bg); color: var(--pass); }
+    .ledger-icon.POTENTIAL_VIOLATION { background: var(--fail-bg); color: var(--fail); }
+    .ledger-icon.NOT_APPLICABLE { background: var(--na-bg); color: var(--na); }
+    .ledger-icon svg { width: 13px; height: 13px; }
+
+    .ledger-label { font-family: 'Space Grotesk', sans-serif; font-weight: 500; font-size: 0.98rem; margin: 0 0 4px; }
+    .ledger-detail { font-size: 0.8rem; color: #57564E; }
+    .ledger-detail + .ledger-detail { margin-top: 2px; }
+
+    .status-text { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+    .status-text.PASS { color: var(--pass); }
+    .status-text.POTENTIAL_VIOLATION { color: var(--fail); }
+    .status-text.NOT_APPLICABLE { color: var(--na); }
+
+    .error-msg { color: var(--fail); font-size: 0.9rem; }
+
+    /* --- History panel --- */
+    .history-toggle {
+        display: block;
+        margin: 0 auto 32px;
+        background: transparent;
+        color: var(--ink);
+        border: 1.5px solid var(--ink);
+        box-shadow: none;
+    }
+    .history-toggle:hover:not(:disabled) {
+        background: var(--ink);
+        color: white;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .history-panel { display: none; }
+    .history-panel.open { display: block; }
+
+    .history-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        margin-bottom: 8px;
+        background: white;
+        border-radius: 10px;
+        border: 1px solid var(--rule);
+    }
+    .history-item .h-name {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 500;
+        font-size: 0.92rem;
+    }
+    .history-item .h-date {
+        font-size: 0.75rem;
+        color: #77756A;
+    }
+    .h-pill {
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        padding: 4px 10px;
+        border-radius: 20px;
+        flex: none;
+    }
+    .h-pill.COMPLIANT { background: var(--pass-bg); color: var(--pass); }
+    .h-pill.NEEDS_VERIFICATION { background: var(--warn-bg); color: var(--warn); }
+    .h-pill.POTENTIAL_NON_COMPLIANCE { background: var(--fail-bg); color: var(--fail); }
+
+    .history-empty {
+        text-align: center;
+        color: #77756A;
+        font-size: 0.85rem;
+        padding: 20px;
+    }
+        .download-btn {
+        display: inline-block;
+        margin-top: 8px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--indigo);
+        text-decoration: none;
+        border: 1.5px solid var(--indigo);
+        border-radius: 30px;
+        padding: 10px 22px;
+    }
+    .download-btn:hover {
+        background: var(--indigo);
+        color: white;
+    }
+        .evidence-img {
+        display: block;
+        max-width: 100%;
+        border-radius: 10px;
+        border: 1px solid var(--rule);
+        margin-bottom: 20px;
+    }
+</style>
+</head>
+<body>
+
+<div class="hero">
+    <div class="hero-inner">
+        <h1>CompliScan</h1>
+        <p>Scans packaged-product labels and checks them against the mandatory declarations under the Legal Metrology (Packaged Commodities) Rules, 2011 — flagging what's missing before an inspector has to.</p>
+    </div>
+</div>
+
+<main>
+    <div class="scan-bed">
+        <div class="corner-tl"></div>
+        <div class="corner-br"></div>
+
+        <div class="preview-wrap" id="previewWrap">
+            <img id="previewImg" src="" alt="Uploaded product">
+            <div class="scan-line" id="scanLine"></div>
+        </div>
+
+        <div class="upload-row">
+            <input type="file" id="imageInput" accept="image/*" onchange="handleFileSelect()"><br>
+            <button id="scanBtn" onclick="scanImage()" disabled>Scan product</button>
+        </div>
+    </div>
+
+    <div id="result"></div>
+
+    <button class="history-toggle" onclick="toggleHistory()">View inspection history</button>
+    <div class="history-panel" id="historyPanel"></div>
+</main>
+
+<script>
+const CHECK_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>`;
+const CROSS_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+const DASH_SVG  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 12h12"/></svg>`;
+
+function handleFileSelect() {
+    const input = document.getElementById("imageInput");
+    const previewWrap = document.getElementById("previewWrap");
+    const previewImg = document.getElementById("previewImg");
+    const btn = document.getElementById("scanBtn");
+
+    if (input.files.length) {
+        const url = URL.createObjectURL(input.files[0]);
+        previewImg.src = url;
+        previewWrap.style.display = "block";
+        btn.disabled = false;
+    }
+}
+
+async function scanImage() {
+    const input = document.getElementById("imageInput");
+    const resultDiv = document.getElementById("result");
+    const btn = document.getElementById("scanBtn");
+    const scanLine = document.getElementById("scanLine");
+
+    if (!input.files.length) return;
+
+    btn.disabled = true;
+    btn.innerText = "Scanning...";
+    scanLine.classList.add("active");
+    resultDiv.innerHTML = "";
+
+    const formData = new FormData();
+    formData.append("file", input.files[0]);
+
+    try {
+        const response = await fetch("http://127.0.0.1:8080/scan", {
+            method: "POST",
+            body: formData
+        });
+        const data = await response.json();
+
+        setTimeout(() => {
+            scanLine.classList.remove("active");
+            renderResult(data);
+            btn.disabled = false;
+            btn.innerText = "Scan product";
+        }, 900);
+
+    } catch (err) {
+        scanLine.classList.remove("active");
+        resultDiv.innerHTML = `<p class="error-msg">Couldn't reach the backend. Is the server running on port 8080?</p>`;
+        btn.disabled = false;
+        btn.innerText = "Scan product";
+        console.error(err);
+    }
+}
+
+function renderResult(data) {
+    const resultDiv = document.getElementById("result");
+    const stampText = data.overall_status.replace(/_/g, " ");
+
+    let html = `<div class="stamp ${data.overall_status}">${stampText}</div>`;
+    html += `<p class="missing-count">Missing required declarations: <strong>${data.missing_required_count}</strong></p>`;
+
+        if (data.annotated_image) {
+        html += `<img class="evidence-img" src="http://127.0.0.1:8080/annotated/${data.annotated_image}" alt="Annotated evidence image">`;
+    }
+
+    data.details.forEach(item => {
+        const icon = item.status === "PASS" ? CHECK_SVG :
+                     item.status === "NOT_APPLICABLE" ? DASH_SVG : CROSS_SVG;
+        html += `
+            <div class="ledger-row">
+                <div class="ledger-icon ${item.status}">${icon}</div>
+                <div>
+                    <p class="ledger-label">${item.label}</p>
+                    <p class="ledger-detail">Detected: ${item.detected_value ?? "Not found"}</p>
+                    <p class="ledger-detail">${item.rule_reference}</p>
+                    <p class="status-text ${item.status}">${item.status.replace(/_/g, " ")}</p>
+                </div>
+            </div>
+        `;
+    });
+
+    if (data.scan_id) {
+        html += `<a href="http://127.0.0.1:8080/report/${data.scan_id}" class="download-btn" target="_blank">Download PDF report</a>`;
+    }
+
+    resultDiv.innerHTML = html;
+}
+
+let historyOpen = false;
+
+async function toggleHistory() {
+    const panel = document.getElementById("historyPanel");
+    historyOpen = !historyOpen;
+
+    if (!historyOpen) {
+        panel.classList.remove("open");
+        return;
+    }
+
+    panel.innerHTML = "<p class='history-empty'>Loading...</p>";
+    panel.classList.add("open");
+
+    try {
+        const response = await fetch("http://127.0.0.1:8080/history");
+        const scans = await response.json();
+
+        if (!scans.length) {
+            panel.innerHTML = "<p class='history-empty'>No scans yet.</p>";
+            return;
+        }
+
+        let html = "";
+        scans.forEach(scan => {
+            const date = new Date(scan.scanned_at).toLocaleString();
+            html += `
+                <div class="history-item">
+                    <div>
+                        <div class="h-name">${scan.image_name}</div>
+                        <div class="h-date">${date}</div>
+                    </div>
+                    <div class="h-pill ${scan.overall_status}">${scan.overall_status.replace(/_/g, " ")}</div>
+                </div>
+            `;
+        });
+        panel.innerHTML = html;
+
+    } catch (err) {
+        panel.innerHTML = "<p class='history-empty'>Couldn't load history.</p>";
+        console.error(err);
+    }
+}
+</script>
+
+</body>
+</html>
